@@ -1,23 +1,27 @@
 import numpy as np
 import math
+from pathlib import Path
 from PIL import Image
 import os
 import sys
 
-# ---------- Vector Utilities ----------
+# Vector Utilities
 def normalize(v):
     norm = np.linalg.norm(v)
     return v / norm if norm != 0 else v
 
-# ---------- Scene Class (✅ Added This Class) ----------
+# Scene Class
 class Scene:
+    # Stores lists of objects and light sources 
     def __init__(self):
-        self.objects = []         # ✅ Added list to hold all objects (spheres/planes)
-        self.lights = []          # ✅ Added list to hold directional lights
-        self.spotlights = []      # ✅ Added list to hold spotlight lights
-        self.ambient = np.array([0.0, 0.0, 0.0])  # ✅ Default ambient light
+        self.objects = []
+        self.lights = []
+        self.spotlights = []
 
-# ---------- Material and Object Classes ----------
+        # Default ambient light
+        self.ambient = np.array([0.0, 0.0, 0.0])
+
+# Material and Object Classes
 class Material:
     def __init__(self, ambient, diffuse, specular, shininess):
         self.ambient = np.array(ambient)
@@ -26,6 +30,7 @@ class Material:
         self.shininess = shininess
 
 class Sphere:
+    # Placeholder material
     def __init__(self, center, radius, material):
         self.center = np.array(center)
         self.radius = radius
@@ -50,6 +55,7 @@ class Sphere:
         return normalize(point - self.center)
 
 class Plane:
+    # Checkerboard plane
     def __init__(self, normal, d, material):
         self.normal = normalize(np.array(normal))
         self.d = d
@@ -65,7 +71,7 @@ class Plane:
     def normal_at(self, point):
         return self.normal
 
-# ---------- Light Classes ----------
+# Light Classes
 class DirectionalLight:
     def __init__(self, direction, intensity):
         self.direction = normalize(np.array(direction))
@@ -78,14 +84,13 @@ class Spotlight:
         self.intensity = np.array(intensity)
         self.cutoff = cutoff  # cosine of cutoff angle
 
-# ---------- Load Scene from File ----------
+# Load scene from File function
 def load_scene(path):
-    print(f"Loading scene from {path}...")
     if not os.path.exists(path):
-        print(f"❌ Scene file '{path}' not found.")
+        print(f"Scene file '{path}' not found.")
         sys.exit(1)
 
-    scene = Scene()  # ✅ Using the Scene class
+    scene = Scene()
     camera_pos = np.array([0, 0, 4], dtype=float)
     objects = []
     materials = []
@@ -95,9 +100,11 @@ def load_scene(path):
     spot_dirs = []
     spot_cutoffs = []
 
+    # Loading the file
     with open(path, 'r') as f:
         lines = f.readlines()
 
+    # Go throw the file line by line
     for line in lines:
         parts = line.strip().split()
         if not parts: continue
@@ -130,9 +137,9 @@ def load_scene(path):
         elif tag == 'i':
             dir_lights.append(np.array(vals[:3]))
 
-    # ✅ Assign materials to objects
+    # Assign materials to objects
     if len(materials) != len(objects):
-        print("⚠ Warning: Number of materials doesn't match number of objects.")
+        print("Warning: Number of materials doesn't match number of objects.")
     for i, obj in enumerate(objects):
         if i < len(materials):
             obj.material = materials[i]
@@ -140,28 +147,34 @@ def load_scene(path):
             obj.material = Material(np.array([0.1, 0.1, 0.1]), np.array([0.1, 0.1, 0.1]), np.array([0.7, 0.7, 0.7]), 8)
         scene.objects.append(obj)
 
-    # ✅ Attach lights
+    # Attach lights
     for i, color in enumerate(dir_lights):
         if i < len(spot_dirs) and i < len(spot_lights):
+            # scene.spotlights
             dir = spot_dirs[i]
             pos = spot_lights[i]
             cutoff = spot_cutoffs[i]
-            scene.spotlights.append(Spotlight(pos, dir, color, cutoff))  # ✅ Use scene.spotlights
+            scene.spotlights.append(Spotlight(pos, dir, color, cutoff))
             print(f"Added spotlight: pos={pos}, dir={dir}, cutoff={cutoff}")
         else:
-            scene.lights.append(DirectionalLight(spot_dirs[i], color))  # ✅ Use scene.lights
+            # scene.lights
+            scene.lights.append(DirectionalLight(spot_dirs[i], color))
             print(f"Added directional light: dir={spot_dirs[i]}, color={color}")
 
     print("Scene successfully loaded.")
     return scene, camera_pos
 
-# ---------- Phong Lighting ----------
+# Phong Lighting function
 def phong_lighting(point, normal, view_dir, material, lights, spotlights, objects, ambient_light):
+    # Start with ambient lighting contribution
     color = material.ambient * ambient_light
 
+    # Directional Lights
     for light in lights:
         L = -light.direction
         shadow_ray_origin = point + normal * 1e-4
+
+        # Check if any object blocks the light (in shadow)
         in_shadow = any(
             obj.intersect(shadow_ray_origin, L) is not None for obj in objects
         )
@@ -170,56 +183,82 @@ def phong_lighting(point, normal, view_dir, material, lights, spotlights, object
         NdotL = max(np.dot(normal, L), 0)
         R = normalize(2 * NdotL * normal - L)
         spec = max(np.dot(view_dir, R), 0) ** material.shininess
+
+        # Add light contribution (diffuse + specular)
         color += material.diffuse * light.intensity * NdotL + material.specular * light.intensity * spec
 
+    # Spotlights
     for s in spotlights:
         Lvec = s.position - point
         L = normalize(Lvec)
         spot_dir = normalize(s.direction)
+
+        # Check spotlight angle cutoff (if point lies within the cone)
         spot_cos = np.dot(-L, spot_dir)
         if spot_cos < s.cutoff:
             continue
         shadow_ray_origin = point + normal * 1e-4
         dist_to_light = np.linalg.norm(Lvec)
+
+        # Check if there's any object blocking the spotlight
         in_shadow = any(
             (t := obj.intersect(shadow_ray_origin, L)) is not None and t < dist_to_light
             for obj in objects
         )
         if in_shadow:
             continue
+
+        # Diffuse and specular calculation
         NdotL = max(np.dot(normal, L), 0)
         R = normalize(2 * NdotL * normal - L)
         spec = max(np.dot(view_dir, R), 0) ** material.shininess
         attenuation = spot_cos
+
+        # Add spotlight contribution to final color
         color += (material.diffuse * s.intensity * NdotL + material.specular * s.intensity * spec) * attenuation
 
     return np.clip(color, 0, 1)
 
-# ---------- Rendering ----------
-def render(eye, objects, lights, spotlights, ambient_light, width=800, height=800):
+# Rendering part
+def render(path, eye, objects, lights, spotlights, ambient_light, width=800, height=800):
     print("Starting render...")
+
+    # Create a blank RGB image
     image = Image.new("RGB", (width, height))
     pixels = image.load()
 
+    # Loop over every pixel in the image
     for y in range(height):
         if y % 100 == 0:
             print(f"Rendering row {y}/{height}")
         for x in range(width):
+            # Convert pixel (x, y) to normalized device coordinates
             px = (x + 0.5) / width
             py = (y + 0.5) / height
+            # Scale x to range [-1, 1]
             screen_x = 2 * px - 1
+            # Flip y and scale to range [-1, 1]
             screen_y = 1 - 2 * py
+
+            # Construct the pixel position in screen space (z = 0)
             pixel_pos = np.array([screen_x, screen_y, 0])
+
+            # Compute the ray direction from eye to pixel
             ray_dir = normalize(pixel_pos - eye)
 
+            # Initialize closest hit values
             min_t = float('inf')
             hit_obj = None
+
+            # Check intersection with all objects
             for obj in objects:
+                # Find intersection distance if any
                 t = obj.intersect(eye, ray_dir)
                 if t and t < min_t:
                     min_t = t
                     hit_obj = obj
 
+            # If a hit occurred, compute lighting
             if hit_obj is not None:
                 point = eye + ray_dir * min_t
                 normal = hit_obj.normal_at(point)
@@ -227,21 +266,25 @@ def render(eye, objects, lights, spotlights, ambient_light, width=800, height=80
                 color = phong_lighting(point, normal, view_dir, hit_obj.material, lights, spotlights, objects, ambient_light)
                 pixels[x, y] = tuple((color * 255).astype(np.uint8))
             else:
+                # No hit — paint the background color (black)
                 pixels[x, y] = (0, 0, 0)
 
-    image.save("rendered_scene.png")
-    print("✅ Rendered image saved as 'rendered_scene.png'")
-    print("✅ Ray Tracer Finished.")
+    image.save(f"{path}_rendered_scene.png")
+    print(f"Rendered image saved as '{path}_rendered_scene.png'")
+    print("Ray Tracer Finished.")
 
-# ---------- Main ----------
+# Running the code
 def main():
+    # Choose a .txt file
+    path = Path("scene5.txt")
     print("Ray Tracer Started.")
     try:
-        scene, eye = load_scene("scene3.txt")  # ✅ fixed scene return
+        # loading the .txt scene file
+        scene, eye = load_scene(path)
     except FileNotFoundError:
-        print("❌ Scene file not found.")
+        print("Scene file not found.")
         return
-    render(eye, scene.objects, scene.lights, scene.spotlights, scene.ambient)
+    render(path, eye, scene.objects, scene.lights, scene.spotlights, scene.ambient)
 
 if __name__ == "__main__":
     main()
