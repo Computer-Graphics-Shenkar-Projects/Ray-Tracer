@@ -4,7 +4,7 @@ This project is a basic implementation of a ray tracer, a rendering algorithm th
 
 The concept of ray tracing differs from traditional rasterization or scanline rendering in that it simulates physical light behavior, such as shadows, reflections, and highlights, which results in visually realistic images. However, this comes at a higher computational cost, making ray tracing more resource-intensive, especially for complex scenes.
 
-# Project Goals and Objectives:
+** Project Goals and Objectives:**
 
 The main objective of this exercise is to manually implement a basic ray tracer to understand the core principles of ray casting and illumination models. The program performs the following key steps:
 
