@@ -4,7 +4,7 @@ This project is a basic implementation of a ray tracer, a rendering algorithm th
 
 The concept of ray tracing differs from traditional rasterization or scanline rendering in that it simulates physical light behavior, such as shadows, reflections, and highlights, which results in visually realistic images. However, this comes at a higher computational cost, making ray tracing more resource-intensive, especially for complex scenes.
 
-* Project Goals and Objectives:*
+**Project Goals and Objectives:**
 
 The main objective of this exercise is to manually implement a basic ray tracer to understand the core principles of ray casting and illumination models. The program performs the following key steps:
 
@@ -18,7 +18,7 @@ The main objective of this exercise is to manually implement a basic ray tracer 
 
 5. Generates a final image by coloring each pixel accordingly.
 
-# Scene Features:
+**Scene Features:**
 
 Display of Geometric Data in 3D Space
 * Spheres: Perfectly round 3D objects with defined center and radius, supporting realistic lighting and shading.
@@ -27,7 +27,7 @@ Display of Geometric Data in 3D Space
 
 * Background: A default color shown when rays do not intersect any object, simulating the environment.
 
-# Light Sources:
+**Light Sources:**
 
 The ray tracer includes several types of basic light sources, each contributing differently to scene illumination:
 
@@ -37,7 +37,7 @@ The ray tracer includes several types of basic light sources, each contributing 
 
 * Spotlights (optional in advanced versions): Emit light in a cone-shaped region, illuminating only specific areas in the scene.
 
-# Material Properties:
+**Material Properties:**
 
 Each object in the scene has a material defined by its interaction with light:
 
@@ -49,6 +49,6 @@ Each object in the scene has a material defined by its interaction with light:
 
 The Phong reflection model is used to combine these components to produce realistic surface appearance.
 
-# Hard Shadows:
+**Hard Shadows:**
 
 To enhance realism, the ray tracer implements basic hard shadows. This is achieved by casting shadow rays from the surface point to each light source. If the path is blocked by another object, the point is in shadow and receives only ambient light, resulting in sharp, clearly defined shadows.
