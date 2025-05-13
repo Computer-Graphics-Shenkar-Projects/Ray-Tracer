@@ -8,15 +8,15 @@ The concept of ray tracing differs from traditional rasterization or scanline re
 
 The main objective of this exercise is to manually implement a basic ray tracer to understand the core principles of ray casting and illumination models. The program performs the following key steps:
 
-1. Shoots rays from the virtual camera through each pixel of the image.
+**1.** Shoots rays from the virtual camera through each pixel of the image.
 
-2. Checks for intersections between the ray and scene objects.
+**2.** Checks for intersections between the ray and scene objects.
 
-3. Determines the closest intersection point to the camera.
+**3.** Determines the closest intersection point to the camera.
 
-4. Calculates the color of the object at that point using the Phong illumination model based on light sources and material properties.
+**4.** Calculates the color of the object at that point using the Phong illumination model based on light sources and material properties.
 
-5. Generates a final image by coloring each pixel accordingly.
+**5.** Generates a final image by coloring each pixel accordingly.
 
 **Scene Features:**
 
