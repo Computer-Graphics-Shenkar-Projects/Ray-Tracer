@@ -12,7 +12,7 @@ def normalize(v):
 
 # Scene Class
 class Scene:
-    # Stores lists of objects and light sources 
+    # Stores lists of objects and light sources
     def __init__(self):
         self.objects = []
         self.lights = []
@@ -37,18 +37,33 @@ class Sphere:
         self.material = material
 
     def intersect(self, ray_origin, ray_dir):
+        # Vector from the ray origin to the center of the sphere
         L = self.center - ray_origin
+
+        # Project vector L onto the ray direction to find the closest approach (tca)
         tca = np.dot(L, ray_dir)
+
+        # Compute squared distance from sphere center to the ray path
         d2 = np.dot(L, L) - tca * tca
+
+        # If this distance is greater than the sphere's radius squared, the ray misses the sphere
         if d2 > self.radius ** 2:
             return None
+        
+        # Distance from the closest approach point to the intersection points
         thc = math.sqrt(self.radius ** 2 - d2)
+
+        # Calculate the two intersection points along the ray
         t0 = tca - thc
         t1 = tca + thc
+
+        # Return the nearest valid intersection point (> small epsilon to avoid self-intersection)
         if t0 > 1e-4:
             return t0
         if t1 > 1e-4:
             return t1
+
+        # No valid intersection (ray points away from sphere or intersects behind origin)
         return None
 
     def normal_at(self, point):
@@ -62,10 +77,17 @@ class Plane:
         self.material = material
 
     def intersect(self, ray_origin, ray_dir):
+        # Compute the dot product between the ray direction and the plane's normal
         denom = np.dot(self.normal, ray_dir)
+
+        # If denom is close to 0, the ray is parallel to the plane and does not intersect
         if abs(denom) < 1e-6:
             return None
+
+        # Calculate the intersection distance 't' along the ray
         t = -(np.dot(self.normal, ray_origin) + self.d) / denom
+
+        # Return the intersection distance if it's in front of the ray origin
         return t if t > 1e-4 else None
 
     def normal_at(self, point):
@@ -269,14 +291,15 @@ def render(path, eye, objects, lights, spotlights, ambient_light, width=800, hei
                 # No hit — paint the background color (black)
                 pixels[x, y] = (0, 0, 0)
 
-    image.save(f"{path}_rendered_scene.png")
-    print(f"Rendered image saved as '{path}_rendered_scene.png'")
+    file_name = os.path.splitext(path)[0]
+    image.save(f"{file_name}_rendered_scene.png")
+    print(f"Rendered image saved as '{file_name}_rendered_scene.png'")
     print("Ray Tracer Finished.")
 
 # Running the code
 def main():
     # Choose a .txt file
-    path = Path("scene5.txt")
+    path = Path("scene1.txt")
     print("Ray Tracer Started.")
     try:
         # loading the .txt scene file
